@@ -1,0 +1,22 @@
+apiVersion: v1
+data:
+  ADMIN_JWT_SECRET: LOaOpkbw1XiCY6R1G/WDHA==
+  API_TOKEN_SALT: PpmitzhF0P7G8FymV1+H5Q==
+  APP_KEYS: JsnmNZPHmR72Ys83Us/DCQ==,bQq0F7yXLNthnynesrlkkQ==,uHZdm6P6Bpb8sM4QJaRqsA==,klYh8xTW2+oHrQd+Lgq4RA==
+  DATABASE_CLIENT: mysql2
+  DATABASE_HOST: containers-us-west-174.railway.app
+  DATABASE_NAME: railway
+  DATABASE_PASSWORD: azBLjEE7VjvvYRD8VFh7
+  DATABASE_PORT: "6030"
+  DATABASE_SSL: "false"
+  DATABASE_USERNAME: root
+  HOST: 0.0.0.0
+  JWT_SECRET: KNbayViw9r9Iw+U7xeXBkg==
+  PORT: "1337"
+  TRANSFER_TOKEN_SALT: NqXcZqFn95wcUQTeEk2jyg==
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: api-api--env
+  name: api--env

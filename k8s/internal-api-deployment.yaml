@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml
+    kompose.version: 1.28.0 (HEAD)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: internal-api
+  name: internal-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: internal-api
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml
+        kompose.version: 1.28.0 (HEAD)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/test-nanodev-app-network: "true"
+        io.kompose.service: internal-api
+    spec:
+      containers:
+        - env:
+            - name: MONGO_URI
+              valueFrom:
+                configMapKeyRef:
+                  key: MONGO_URI
+                  name: internal-api--env
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  key: PORT
+                  name: internal-api--env
+          image: internal-api
+          name: internal-api
+          resources: {}
+      restartPolicy: Always
+status: {}
