@@ -20,7 +20,7 @@ func AddExpertiseAreaGroup(app *fiber.App) {
 }
 
 func getExpertiseAreas(c *fiber.Ctx) error {
-	coll := common.GetDBCollection("expertiseAreas")
+	coll := common.GetDBCollection("expertise_areas")
 
 	// find all ExpertiseAreas
 	ExpertiseAreas := make([]models.ExpertiseArea, 0)
@@ -47,7 +47,7 @@ func getExpertiseAreas(c *fiber.Ctx) error {
 }
 
 func getExpertiseArea(c *fiber.Ctx) error {
-	coll := common.GetDBCollection("expertiseAreas")
+	coll := common.GetDBCollection("expertise_areas")
 
 	// find the ExpertiseArea
 	id := c.Params("id")
@@ -81,15 +81,14 @@ type createExpertiseAreaDTO struct {
 
 func createExpertiseArea(c *fiber.Ctx) error {
 	// validate the body
-	b := new(createDTO)
+	b := new(createExpertiseAreaDTO)
 	if err := c.BodyParser(b); err != nil {
 		return c.Status(400).JSON(fiber.Map{
 			"error": "Invalid body",
 		})
 	}
-
 	// create the ExpertiseArea
-	coll := common.GetDBCollection("expertiseAreas")
+	coll := common.GetDBCollection("expertise_areas")
 	result, err := coll.InsertOne(c.Context(), b)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
@@ -132,7 +131,7 @@ func updateExpertiseArea(c *fiber.Ctx) error {
 	}
 
 	// update the ExpertiseArea
-	coll := common.GetDBCollection("expertiseAreas")
+	coll := common.GetDBCollection("expertise_areas")
 	result, err := coll.UpdateOne(c.Context(), bson.M{"_id": objectId}, bson.M{"$set": b})
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
@@ -163,7 +162,7 @@ func deleteExpertiseArea(c *fiber.Ctx) error {
 	}
 
 	// delete the ExpertiseArea
-	coll := common.GetDBCollection("expertiseAreas")
+	coll := common.GetDBCollection("expertise_areas")
 	result, err := coll.DeleteOne(c.Context(), bson.M{"_id": objectId})
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{

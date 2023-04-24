@@ -3,10 +3,13 @@ package router
 import (
 	"fiber-internal-api/common"
 	"fiber-internal-api/models"
+	"fmt"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func AddRequestGroup(app *fiber.App) {
@@ -24,7 +27,18 @@ func getRequests(c *fiber.Ctx) error {
 
 	// find all requests
 	requests := make([]models.Request, 0)
-	cursor, err := coll.Find(c.Context(), bson.M{})
+	userId := c.Query("userId")
+	// matchStage := bson.D{{userId: userId}}
+	matchStage := bson.D{{Key: "$match", Value: bson.D{{Key: "userId", Value: userId}}}}
+	lookupStage := bson.D{{Key: "$lookup", Value: bson.D{{Key: "from", Value: "expertise_areas"}, {Key: "localField", Value: "expertiseAreaId"}, {Key: "foreignField", Value: "_id"}, {Key: "as", Value: "expertiseArea"}}}}
+	// unwindStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$expertiseArea"}, {Key: "preserveNullAndEmptyArrays", Value: false}}}}
+	unwindStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$expertiseArea"}}}}
+
+	stages := mongo.Pipeline{lookupStage, unwindStage}
+	if userId != "" {
+		stages = mongo.Pipeline{matchStage, lookupStage, unwindStage}
+	}
+	cursor, err := coll.Aggregate(c.Context(), stages)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"error": err.Error(),
@@ -34,6 +48,8 @@ func getRequests(c *fiber.Ctx) error {
 	// iterate over the cursor
 	for cursor.Next(c.Context()) {
 		request := models.Request{}
+		// expertiseArea := models.ExpertiseArea{}
+		// request.ExpertiseArea = expertiseArea
 		err := cursor.Decode(&request)
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{
@@ -65,7 +81,18 @@ func getRequest(c *fiber.Ctx) error {
 
 	request := models.Request{}
 
-	err = coll.FindOne(c.Context(), bson.M{"_id": objectId}).Decode(&request)
+	matchStage := bson.D{{Key: "$match", Value: bson.D{{Key: "_id", Value: objectId}}}}
+	lookupStage := bson.D{{Key: "$lookup", Value: bson.D{{Key: "from", Value: "expertise_area"}, {Key: "localField", Value: "expertiseAreaId"}, {Key: "foreignField", Value: "_id"}, {Key: "as", Value: "expertiseArea"}}}}
+	unwindStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$expertiseArea"}, {Key: "preserveNullAndEmptyArrays", Value: false}}}}
+
+	// err = coll.FindOne(c.Context(), bson.M{"_id": objectId}).Decode(&request)
+	cursor, err := coll.Aggregate(c.Context(), mongo.Pipeline{matchStage, lookupStage, unwindStage})
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+	err = cursor.Decode(&request)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"error": err.Error(),
@@ -76,20 +103,29 @@ func getRequest(c *fiber.Ctx) error {
 }
 
 type createDTO struct {
-	Title  string `json:"title" bson:"title"`
-	Author string `json:"author" bson:"author"`
-	Year   string `json:"year" bson:"year"`
+	Title           string             `json:"title" bson:"title"`
+	Content         string             `json:"content" bson:"content"`
+	ExpertiseAreaId primitive.ObjectID `json:"expertiseAreaId" bson:"expertiseAreaId"`
+	UserId          string             `json:"userId,omitempty" bson:"userId,omitempty"`
+	CreatedAt       time.Time          `json:"createdAt,omitempty" bson:"createdAt"`
+	UpdatedAt       time.Time          `json:"updatedAt,omitempty" bson:"updatedAt"`
+	Status          models.Status      `json:"status" bson:"status"`
 }
 
 func createRequest(c *fiber.Ctx) error {
 	// validate the body
 	b := new(createDTO)
+	now := time.Now()
+	b.CreatedAt = now
+	b.UpdatedAt = now
+	b.Status = models.InProgress
 	if err := c.BodyParser(b); err != nil {
 		return c.Status(400).JSON(fiber.Map{
 			"error": "Invalid body",
 		})
 	}
 
+	fmt.Println(b)
 	// create the request
 	coll := common.GetDBCollection("requests")
 	result, err := coll.InsertOne(c.Context(), b)
@@ -107,9 +143,11 @@ func createRequest(c *fiber.Ctx) error {
 }
 
 type updateDTO struct {
-	Title  string `json:"title,omitempty" bson:"title,omitempty"`
-	Author string `json:"author,omitempty" bson:"author,omitempty"`
-	Year   string `json:"year,omitempty" bson:"year,omitempty"`
+	Title           string             `json:"title" bson:"title"`
+	Content         string             `json:"content" bson:"content"`
+	ExpertiseAreaId primitive.ObjectID `json:"expertiseAreaId" bson:"expertiseAreaId"`
+	UserId          string             `json:"userId" bson:"userId"`
+	Status          models.Status      `json:"status" bson:"status"`
 }
 
 func updateRequest(c *fiber.Ctx) error {
@@ -121,6 +159,11 @@ func updateRequest(c *fiber.Ctx) error {
 		})
 	}
 
+	if statusValidateErr := b.Status.IsStatusValid(); statusValidateErr != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"error": "Invalid status provided",
+		})
+	}
 	// get the id
 	id := c.Params("id")
 	if id == "" {
@@ -137,7 +180,7 @@ func updateRequest(c *fiber.Ctx) error {
 
 	// update the request
 	coll := common.GetDBCollection("requests")
-	result, err := coll.UpdateOne(c.Context(), bson.M{"_id": objectId}, bson.M{"$set": b})
+	result, err := coll.UpdateOne(c.Context(), bson.M{"_id": objectId}, bson.M{"$set": b, "$currentDate": bson.M{"updatedAt": true}})
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"error":   "Failed to update request",

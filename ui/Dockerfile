@@ -1,18 +1,8 @@
-# Fetching the latest node image on alpine linux
-FROM node:slim AS development
-
-# Declaring env
-ENV NODE_ENV development
-
-# Setting up the work directory
-WORKDIR /ui
-
-# Installing dependencies
-COPY ./package.json /ui
-RUN yarn install
-
-# Copying all the files in our project
-COPY . .
-
-# Starting our application
-CMD yarn start
+FROM node:16.13.1
+WORKDIR /app
+COPY package.json . 
+RUN yarn install 
+COPY . . 
+RUN yarn global add vite 
+EXPOSE 3000
+CMD ["yarn", "run", "dev"]

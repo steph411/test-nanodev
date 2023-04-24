@@ -9,8 +9,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func AddStaffMemberGroup(app *fiber.App) {
-	staffMemberGroup := app.Group("/requests")
+func AddStaffMembersGroup(app *fiber.App) {
+	staffMemberGroup := app.Group("/members")
 
 	staffMemberGroup.Get("/", getStaffMembers)
 	staffMemberGroup.Get("/:id", getStaffMember)
@@ -20,7 +20,7 @@ func AddStaffMemberGroup(app *fiber.App) {
 }
 
 func getStaffMembers(c *fiber.Ctx) error {
-	coll := common.GetDBCollection("staffMembers")
+	coll := common.GetDBCollection("staff_members")
 
 	// find all staffMembers
 	staffMembers := make([]models.StaffMember, 0)
@@ -47,7 +47,7 @@ func getStaffMembers(c *fiber.Ctx) error {
 }
 
 func getStaffMember(c *fiber.Ctx) error {
-	coll := common.GetDBCollection("staffMembers")
+	coll := common.GetDBCollection("staff_members")
 
 	// find the staffMember
 	id := c.Params("id")
@@ -76,14 +76,13 @@ func getStaffMember(c *fiber.Ctx) error {
 }
 
 type createStaffMemberDTO struct {
-	Title  string `json:"title" bson:"title"`
-	Author string `json:"author" bson:"author"`
-	Year   string `json:"year" bson:"year"`
+	Name   string `json:"name,omitempty" bson:"name,omitempty"`
+	AreaId string `json:"areaId,omitempty" bson:"areaId,omitempty"`
 }
 
 func createStaffMember(c *fiber.Ctx) error {
 	// validate the body
-	b := new(createDTO)
+	b := new(createStaffMemberDTO)
 	if err := c.BodyParser(b); err != nil {
 		return c.Status(400).JSON(fiber.Map{
 			"error": "Invalid body",
@@ -91,7 +90,7 @@ func createStaffMember(c *fiber.Ctx) error {
 	}
 
 	// create the staffMember
-	coll := common.GetDBCollection("staffMembers")
+	coll := common.GetDBCollection("staff_members")
 	result, err := coll.InsertOne(c.Context(), b)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
@@ -113,7 +112,7 @@ type updateStaffMemberDTO struct {
 
 func updateStaffMember(c *fiber.Ctx) error {
 	// validate the body
-	b := new(updateDTO)
+	b := new(updateStaffMemberDTO)
 	if err := c.BodyParser(b); err != nil {
 		return c.Status(400).JSON(fiber.Map{
 			"error": "Invalid body",
@@ -135,7 +134,7 @@ func updateStaffMember(c *fiber.Ctx) error {
 	}
 
 	// update the staffMember
-	coll := common.GetDBCollection("staffMembers")
+	coll := common.GetDBCollection("staff_members")
 	result, err := coll.UpdateOne(c.Context(), bson.M{"_id": objectId}, bson.M{"$set": b})
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
@@ -166,7 +165,7 @@ func deleteStaffMember(c *fiber.Ctx) error {
 	}
 
 	// delete the staffMember
-	coll := common.GetDBCollection("staffMembers")
+	coll := common.GetDBCollection("staff_members")
 	result, err := coll.DeleteOne(c.Context(), bson.M{"_id": objectId})
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{

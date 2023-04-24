@@ -1,7 +1,9 @@
 package models
 
+import "go.mongodb.org/mongo-driver/bson/primitive"
+
 type StaffMember struct {
-	ID     string `json:"id" bson:"_id"`
-	Name   string `json:"name" bson:"name"`
-	AreaId string `json:"author" bson:"area"`
+	ID     primitive.ObjectID `json:"id" bson:"_id"`
+	Name   string             `json:"name" bson:"name"`
+	AreaId string             `json:"area" bson:"area"`
 }

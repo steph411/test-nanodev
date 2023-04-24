@@ -46,6 +46,8 @@ func run() error {
 
 	// add routes
 	router.AddRequestGroup(app)
+	router.AddExpertiseAreaGroup(app)
+	router.AddStaffMembersGroup(app)
 
 	// start server
 	var port string

@@ -1,81 +1,78 @@
-import * as axios from "axios";
-export const AUTHORIZATION = "Authorization";
-export interface WsConfig {
-  url: string;
-  prefix?: boolean;
-}
+import { UserStore as userStore } from "../store";
+import ApiCall from "./request";
 
-export class WS {
-  private instance: axios.AxiosInstance;
-  private prefix?: string;
-  public config: WsConfig;
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:1337";
+const ApiService = new ApiCall();
 
-  constructor(config: WsConfig) {
-    this.config = config;
-    this.prefix = config.prefix == undefined ? "" : `${config.prefix} `;
-    this.instance = axios.default.create({ baseURL: config.url });
-  }
+export const login = async (params: {
+  identifier: string;
+  password: string;
+}) => {
+  const url = `${API_URL}/auth/local`;
+  const data = await ApiService.post(url, params);
+  console.log({ logindata: data });
+  userStore.setState({ user: data.user, token: data.jwt });
+  return data;
+};
 
-  public request(config: axios.AxiosRequestConfig): axios.AxiosPromise {
-    if (config.headers == undefined) config.headers = {};
+export const logout = async () => {
+  userStore.setState({ user: undefined, token: "" });
+  return;
+};
 
-    return this.instance
-      .request(config)
-      .then((resp: axios.AxiosResponse) => {
-        return resp;
-      })
-      .catch((err: any) => {
-        throw err;
-      });
-  }
+export const register = async (params: {
+  username: string;
+  email: string;
+  password: string;
+}) => {
+  const url = `${API_URL}/auth/local/register`;
+  const data = await ApiService.post(url, params);
+  console.log({ logindata: data });
+  userStore.setState({ user: data.user, token: data.jwt });
+  return data;
+};
 
-  public get(
-    url: string,
-    config: axios.AxiosRequestConfig = {}
-  ): axios.AxiosPromise {
-    config.url = url;
-    config.method = "GET";
+export const confirmEmail = async () => {};
 
-    return this.request(config);
-  }
+export const getMe = async (): Promise<{ name: string; email: string }> => {
+  const url = `${API_URL}/users/me`;
+  const data = await ApiService.get(url);
 
-  public post(
-    url: string,
-    config: axios.AxiosRequestConfig
-  ): axios.AxiosPromise {
-    config.url = url;
-    config.method = "POST";
+  return { name: "", email: "", ...data };
+};
 
-    return this.request(config);
-  }
+export const getRequests = async (userId: string | undefined = undefined) => {
+  let url = `${API_URL}/api/requests`;
+  if (userId) url += `?userId=${userId}`;
+  const data = await ApiService.get(url);
+  return data;
+};
 
-  public put(
-    url: string,
-    config: axios.AxiosRequestConfig
-  ): axios.AxiosPromise {
-    config.url = url;
-    config.method = "PUT";
+export const createRequest = async (params: {
+  name: string;
+  content: string;
+  areaId: string;
+}) => {
+  let url = `${API_URL}/api/requests`;
+  const data = await ApiService.post(url, params);
+  return data;
+};
 
-    return this.request(config);
-  }
+export type Status = "IN_PROGRESS" | "REJECTED" | "PROCESSED";
+export const updateRequest = async (params: { status: Status }) => {
+  let url = `${API_URL}/api/requests`;
+  const data = await ApiService.put(url, params);
+  return data;
+};
 
-  public patch(
-    url: string,
-    config: axios.AxiosRequestConfig
-  ): axios.AxiosPromise {
-    config.url = url;
-    config.method = "PATCH";
+export const getExpertiseAreas = async () => {
+  let url = `${API_URL}/api/expertise-areas`;
+  const data = await ApiService.get(url);
+  return data;
+};
 
-    return this.request(config);
-  }
-
-  public delete(
-    url: string,
-    config: axios.AxiosRequestConfig
-  ): axios.AxiosPromise {
-    config.url = url;
-    config.method = "DELETE";
-
-    return this.request(config);
-  }
-}
+export const createExpertiseArea = async (params: { name: string }) => {
+  let url = `${API_URL}/api/expertise-area`;
+  const data = await ApiService.post(url, params);
+  return data;
+};

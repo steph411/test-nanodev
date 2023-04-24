@@ -1,92 +1,49 @@
-version: '3.8'
+version: "3.8"
 
 services:
-    api:
-        container_name: api
-        image: strapi/strapi
-        env_file: ./api/.env
-            # comment in production mode
-        # environment:
-        #   HOST: "0.0.0.0"
-        #   PORT: "1337"
-        #   APP_KEYS: "JsnmNZPHmR72Ys83Us/DCQ==,bQq0F7yXLNthnynesrlkkQ==,uHZdm6P6Bpb8sM4QJaRqsA==,klYh8xTW2+oHrQd+Lgq4RA=="
-        #   API_TOKEN_SALT: "PpmitzhF0P7G8FymV1+H5Q=="
-        #   ADMIN_JWT_SECRET: "LOaOpkbw1XiCY6R1G/WDHA=="
-        #   TRANSFER_TOKEN_SALT: "NqXcZqFn95wcUQTeEk2jyg=="
-        #     # Database
-        #   DATABASE_CLIENT: "mysql2"
-        #   DATABASE_HOST: "containers-us-west-174.railway.app"
-        #   DATABASE_PORT: "6030"
-        #   DATABASE_NAME: "railway"
-        #   DATABASE_USERNAME: "root"
-        #   DATABASE_PASSWORD: "azBLjEE7VjvvYRD8VFh7"
-        #   DATABASE_SSL: "false"
-        #   JWT_SECRET: "KNbayViw9r9Iw+U7xeXBkg=="
+  api:
+    container_name: api
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./api/.env
+    volumes:
+      - ./api/config:/app/config
+      - ./api/src:/app/src
+      - ./api/package.json:/app/package.json
+      - ./api/yarn.lock:/app/yarn.lock
+      - ./api/.env:/app/.env
+      - ./api/public/uploads:/app/public/uploads
+    ports:
+      - 1337:1337
+    networks:
+      - app-network
 
-        ports:
-            - 1337:1337
-        networks:
-            - app-network
-        # volumes:
-        #     - ./api:/api
-        restart: unless-stopped
-    
-    internal-api:
-        container_name: internal-api
-        build:
-            context: ./internal-api
-            dockerfile: Dockerfile
-        env_file: ./internal-api/.env
-        networks:
-            - app-network
-        # volumes:
-        #     - ./internal-api:/internal-api
-            # - ./user/node_modules:/home/node/app/node_modules
-        restart: unless-stopped
-    
-    ui:
-      build: 
-        context: ./ui
-        dockerfile: Dockerfile
-      # volumes:
-      #   - ./ui:/ui
-      ports:
-        - '3000:3000'
-        
+  internal-api:
+    container_name: internal-api
+    build:
+      context: ./internal-api
+      dockerfile: Dockerfile
+    env_file: ./internal-api/.env
+    ports:
+      - 8080:8080
+    networks:
+      - app-network
+    volumes:
+      - ./internal-api:/app
+    restart: unless-stopped
 
-    prometheus:
-
-      
-      image: prom/prometheus:v2.30.3
-      ports:
-        - 9090:9090
-      networks:
-        - app-network
-      volumes:
-        - ./prometheus:/etc/prometheus
-        - prometheus-data:/prometheus
-      command: --web.enable-lifecycle  --config.file=/etc/prometheus/config.yml
-      
-        # container_name: security_service
-        # build:
-        #     context: ./security
-        #     dockerfile: Dockerfile
-        #     # target: production
-        #     target: build
-        #     args:
-        #         - NODE_ENV=production
-        # command: npm run start:dev
-        # networks:
-        #     - app-network
-        # volumes:
-        #     - ./security:/home/node/app
-        #     # - ./security/node_modules:/home/node/app/node_modules
-        # restart: unless-stopped
-        
-        # environment:
-        #     JWT_SECRET: secretforjwt
-
-    
+  prometheus:
+    image: prom/prometheus:v2.30.3
+    ports:
+      - 9090:9090
+    networks:
+      - app-network
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    command: --web.enable-lifecycle  --config.file=/etc/prometheus/config.yml
 
 networks:
   app-network:
